@@ -1,41 +1,48 @@
+# Updated Flask API Script
 from flask import Flask, request, jsonify, Blueprint
 import pandas as pd
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
-import seaborn as sns
-from sklearn.model_selection import train_test_split
 from model.carcrashmodel import *
+from joblib import load
+# Assume model.carcrashmodel is a placeholder for where you'd import or define your models
+
 app = Flask(__name__)
 
 carcrash_api = Blueprint('carcrash_api', __name__, url_prefix='/api/carcrash')
 
-# Load and prepare your data, initialize and train your models here...
+dt_regressor = load('dt_regressor.joblib')
+lr_regressor = load('lr_regressor.joblib')
+
 
 @carcrash_api.route('/predict', methods=['POST'])
 def predict():
+
     try:
         json_data = request.get_json(force=True)
         
-        # Assuming JSON data will be in the form of a dictionary matching the features
+        # Convert input JSON data to DataFrame
         features = pd.DataFrame(json_data, index=[0])
         
-        # Make predictions with both models
-        prediction_dt = dt_regressor.predict(features)
-        prediction_lr = lr_regressor.predict(features)
+        # Predictions
+        prediction_dt = dt_regressor.predict(features)[0]
+        prediction_lr = lr_regressor.predict(features)[0]
         
-        # Return predictions
+        # Convert Linear Regression prediction to percentage
+        # Assuming the prediction is a proportion, multiply by 100 to get percentage
+        prediction_lr_percent = prediction_lr 
+        
         return jsonify({
-            'Decision Tree Prediction': prediction_dt[0],
-            'Linear Regression Prediction': prediction_lr[0]
+            'Decision Tree Prediction': prediction_dt,
+            'Linear Regression Prediction (%)': prediction_lr_percent
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 400
-# Register your blueprint
+
+    pass
+
+# This line is crucial
+app.register_blueprint(carcrash_api)
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-
-
-
